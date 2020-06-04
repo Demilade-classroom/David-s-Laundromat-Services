@@ -17,6 +17,7 @@ module.exports = (req, res, next) => {
             req.user = decoded.user;
             next();
         } catch (err) {
+            console.log("error from user authentication", err);
             return res.status(401).json({
                 message: 'You must be logged in!!'
             })
