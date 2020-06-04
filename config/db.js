@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 const { MONGOURI } = require("./config");
 
-global.Promise = mongoose.Promise;
-
 const dbConnect = () => {
     mongoose
     .connect(MONGOURI, {
@@ -12,7 +10,7 @@ const dbConnect = () => {
         useCreateIndex: true
     })
     .then(() => console.log("💻 Database Connected sucessfully.."))
-    .catch(err => console.error(err));
+    .catch(err => console.log('error from database connection >>>>>', err));
 };
 
 module.exports = dbConnect;

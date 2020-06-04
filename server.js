@@ -35,8 +35,8 @@ app.get("/", (req, res) => {
 app.get("/api/v1", (req, res) => {
     res.send(` Welcome to the API Version 1.0.0 of David's Laundromat Services
         Please read the api documentation for how to go about its usage..
-    `)
-})
+    `);
+});
 
 // this router will handle the user authentication and authorisation
 app.use("/api/v1/auth", authRoute);
@@ -48,17 +48,17 @@ app.use("/api/v1/payments", paymentRoute);
 
 // You can set 404 and 500 errors
 app.use((req, res, next) => {
-    const error = new Error('Not found')
-    error.status = 404
-    next(error)
-})
+    const error = new Error('Not found');
+    error.status = 404;
+    next(error);
+});
 
 app.use((error, req, res, next) => {
     if(error.status === 404)
         res.status(404).json({message: "Invalid Request, Request Not found"});
     else 
-        res.status(500).json({message: "Oops, problem occurred while processing your request.."});
-})
+        res.status(500).json({message: "Something went wrong. Try again."});
+});
 
 const port = process.env.PORT || 5000;
 

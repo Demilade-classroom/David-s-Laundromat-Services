@@ -1,120 +1,111 @@
 const { Customer } = require("../models");
 
-exports.addCustomer = (req, res) => {
-
+exports.addCustomer = async (req, res) => {
     const { name, email, registrationDate, phoneNumber, homeAddress } = req.body;
-
-    Customer
-        .find({ email })
-        .exec()
-        .then( record => {
-            if(record.length >= 1) {
-                return res.status(409).json({
-                    message: 'There\'s a record for this customer already!' 
-                })
-            }
-            const customer = new Customer({
-                name, 
-                email, 
-                registrationDate, 
-                phoneNumber, 
-                homeAddress
-            })
-            customer
-                .save()
-                .then( record => {
-                    return res.status(201).json({
-                        message: 'Customer added successfully',
-                        customer: record
-                    })
-                })
-                .catch( err => {
-                    return res.status(500).json({
-                        error: 'Error occurred. Unable to create customer'
-                    })
-                })
-        })
-}
-
-exports.updateCustomer = (req, res, next) => {
-    if (!req.body) {
-        return res.status(400).json({ message: 'Data to update can not be empty!' });
+    try {
+        const customerExists = await Customer.findOne({ email });
+        if (customerExists) {
+            return res.status(401).json({
+                message: "There's a record for this customer already!"
+            });
+        }
+        const customer = new Customer({
+            name, 
+            email, 
+            registrationDate, 
+            phoneNumber, 
+            homeAddress
+        });
+        const savedCustomer = await customer.save();
+        return res.status(201).json({
+            message: "Customer added successfully",
+            customer: savedCustomer
+        });
+    } catch (error) {
+        console.log("error from customer sign up >>>>>", error);
+        return res.status(500).json({
+            message: "Something went wrong. Try again."
+        });
     }
-    Customer
-        .findByIdAndUpdate(req.params.customerId, req.body, { new: true }, (err, result) => {
-            if (!result) {
-                return res.status(404).json({
-                    message: 'Customer does not exist or has already been deleted'
-                })
+};
+
+exports.updateCustomer = async (req, res) => {
+    try {
+        const customerFound = await Customer.findByIdAndUpdate(
+            req.params.customerId,
+            req.body,
+            {
+                new: true
             }
-            if(err) return res.status(500).json({
-                error: "Error occurred. Unable to process your request.."
-            })
-            return res.status(200).json({
-                message: 'Customer updated successfully',
-                customer: result
-            })
-        } )
+        );
+        if (!customerFound) {
+            return res.status(404).json({
+                message: "Customer does not exist or has already been deleted"
+            });
+        }
+        return res.status(200).json({
+            message: "Customer updated successfully",
+            customer: customerFound
+        });
+    } catch (error) {
+        console.log("error from customer update >>>>>", error);
+        return res.status(500).json({
+            message: "Something went wrong. Try again."
+        });
+    }
+};
 
-}
+exports.deleteCustomer = async (req, res) => {
+    try {
+        const deletedCustomer = await Customer.findByIdAndRemove(req.params.customerId);
+        if (!deletedCustomer) {
+            return res.status(404).json({
+                message: "Customer does not exist or has already been deleted"
+            });
+        }
+        return res.status(200).json({
+            message: "Customer deleted successfully"
+        });
+    } catch (error) {
+        console.log("error from customer deletion >>>>>", error);
+        return res.status(500).json({
+            message: "Something went wrong. Try again."
+        });
+    }
+};
 
-exports.deleteCustomer = (req, res, next) => {
-    Customer
-        .findByIdAndRemove(req.params.customerId, (err, result) => {
-            if (!result) {
-                return res.status(404).json({
-                    message: 'Customer does not exist or has already been deleted'
-                })
-            }
-            if(err) return res.status(500).json({
-                message: 'Error occurred. Unable to process your request..'
-            })
-            return res.status(200).json({
-                message: 'Customer deleted successfully'
-            })            
-        })
+exports.getAllCustomers = async (req, res) => {
+    try {
+        const customers = await Customer.find().populate("wash", "amount date").select("-__v");
+        return res.status(200).json({
+            message: `${customers.length} ${customers.length > 1 ? `Customers`: `Customer`} found`,
+            data: customers
+        });
+    } catch (error) {
+        console.log("error from all customers fetch >>>>>", error);
+        return res.status(500).json({
+            message: "Something went wrong. Try again."
+        });
+    }
+};
 
-}
-
-exports.getAllCustomers = (req, res, next) => {
-    Customer
-        .find()
-        .populate("wash", "amount date")
-        .select("-__v")
-        .then( customers => {
-            res.status(200).json({
-                count: customers.length + " Customers",
-                customers
-            })
-        })
-        .catch( err => {
-            console.log(err);
-            return res.status(500).json({
-                message: "Error occurred. Unable to process your request.."
-            })
-        })
-}
-
-exports.getCustomer = (req, res, next) => {
-    const id = req.params.customerId
-    Customer.findById(id)
-    .select('-__v')
-    .then( doc => {
-        console.log("From Database", doc);
-        if (doc) {
-            return res.status(200).json({
-                meassage: "Customer found..",
-                customer: doc
-            })
-        } else {
+exports.getCustomer = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const customerDoc = await Customer.findById(customerId).select("-__v");
+        if (!customerDoc) {
             return res.status(404).json({
                 message: 'No valid entry found for the provided id'
-            })
+            });
         }
-        
-    })
-    .catch( err => {
-        console.log(err)
-        return res.status(500).json({error: 'Encountered problem while processing your request..'})
-    })
-}
+        return res.status(200).json({
+            message: "Customer found..",
+            customer: customerDoc
+        });
+    } catch (error) {
+        console.log("error from a customer fetch >>>>>", error);
+        return res.status(500).json({
+            message: "Something went wrong. Try again."
+        });
+    }
+};
